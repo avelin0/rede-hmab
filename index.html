@@ -2,394 +2,80 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Rede Credenciada - HMAB 2026</title>
-    <!-- Bibliotecas Gratuitas via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Rede Credenciada HMAB 2026</title>
     <style>
-        :root {
-            --primary-color: #1b4332; /* Verde Exército */
-            --secondary-color: #2d6a4f;
-            --accent-color: #d4af37; /* Dourado */
-            --bg-light: #f4f6f4;
-            --text-dark: #2d312e;
-            --white: #ffffff;
-            --border-color: #dae2dc;
-            --alert-bg: #fff3cd;
-            --alert-text: #856404;
-            --fav-color: #e63946;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-light); color: var(--text-dark); padding: 20px; line-height: 1.6; }
-        .container { max-width: 1400px; margin: 0 auto; background: var(--white); padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        
-        header { border-bottom: 3px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-        .header-title h1 { color: var(--primary-color); font-size: 22px; font-weight: 700; text-transform: uppercase; }
-        .header-title p { color: #555; font-size: 13px; margin-top: 3px; }
-        .badge-eb { background-color: var(--primary-color); color: var(--white); padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
-
-        /* Painel Analítico de Gráficos */
-        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 25px; }
-        .chart-card { background: #fafafa; border: 1px solid var(--border-color); padding: 15px; border-radius: 6px; min-height: 320px; display: flex; flex-direction: column; align-items: center; }
-        .chart-card h4 { margin-bottom: 10px; color: var(--primary-color); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .chart-container { width: 100%; height: 260px; position: relative; }
-
-        /* Regras da Corporação */
-        .info-box { background-color: #e2e3e5; border-left: 5px solid #6c757d; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-size: 13px; }
-        .info-box h3 { margin-bottom: 5px; color: var(--primary-color); font-size: 14px; }
-        .info-box ul { margin-left: 20px; }
-        .alert-box { background-color: var(--alert-bg); color: var(--alert-text); border: 1px solid #ffeeba; padding: 12px; border-radius: 4px; font-size: 13px; margin-bottom: 25px; }
-
-        /* Controle Operacional (Filtros) */
-        .search-panel { background: #f9fbf9; border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; margin-bottom: 20px; }
-        .search-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--primary-color); }
-        .form-group input, .form-group select { padding: 8px 12px; border: 1px solid #ccd5ae; border-radius: 4px; font-size: 13px; outline: none; }
-        .form-group input:focus, .form-group select:focus { border-color: var(--secondary-color); box-shadow: 0 0 4px rgba(45, 106, 79, 0.2); }
-
-        /* Tabela Contêiner Dinâmica */
-        .results-counter { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .table-container { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 6px; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-        th { background-color: var(--primary-color); color: var(--white); padding: 12px; font-weight: 600; text-transform: uppercase; font-size: 11px; cursor: pointer; user-select: none; position: relative; }
-        th:hover { background-color: var(--secondary-color); }
-        th.sort-asc::after { content: " ▲"; font-size: 9px; position: absolute; right: 5px; }
-        th.sort-desc::after { content: " ▼"; font-size: 9px; position: absolute; right: 5px; }
-        td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
-        tr:nth-child(even) td { background-color: #fcfdfe; }
-        tr:hover td { background-color: #f1f5f2; }
-
-        /* Personalização e Interatividades */
-        .action-cell { text-align: center; vertical-align: middle; }
-        .btn-fav { background: none; border: none; font-size: 20px; cursor: pointer; color: #ccc; transition: transform 0.1s; outline: none; }
-        .btn-fav.active { color: var(--fav-color); transform: scale(1.1); }
-        .star-rating { display: flex; gap: 2px; margin-top: 5px; }
-        .star { font-size: 16px; color: #ccc; cursor: pointer; }
-        .star.filled { color: var(--accent-color); }
-
-        /* Badges Temáticas de Especialidades */
-        .spec-badge { display: inline-block; background: #e8f0ec; color: var(--secondary-color); padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin: 2px; border: 1px solid #d8e5df; }
-        .pne-badge { background: #e7f5ff; color: #004085; border: 1px solid #b8daff; }
-        .hc-badge { background: #f3e5f5; color: #4a148c; border: 1px solid #e1bee7; }
-        .urg-badge { background: #fff5f5; color: #e60000; border: 1px solid #ffe3e3; font-weight: bold; }
-
-        @media (max-width: 768px) {
-            header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .analytics-grid { grid-template-columns: 1fr; }
-        }
+        :root { --primary: #1b4332; --accent: #d4af37; --bg: #f9f9f9; }
+        body { font-family: sans-serif; background: var(--bg); padding: 20px; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary); margin-bottom: 10px; }
+        .link-portal { display: inline-block; margin-bottom: 20px; color: var(--secondary-color); font-weight: bold; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex: 1; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: var(--primary); color: white; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        .fav { cursor: pointer; font-size: 20px; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <header>
-        <div class="header-title">
-            <h1>OCS e PSA Credenciados ao H Mil A Brasília</h1>
-            <p>Painel Analítico de Organizações Civis e Profissionais de Saúde Autônomos (FuSEx) • Atualizado em 10/05/2026</p>
-        </div>
-        <span class="badge-eb">SSEx / FuSEx</span>
-    </header>
+    <h1>Rede Credenciada HMAB 2026</h1>
+    <a class="link-portal" href="https://www.hmab.eb.mil.br/images/redecredenciada/LIVRETO-OCSCREDENCIADA.pdf" target="_blank">📄 Acessar PDF Oficial (Atualizado 10/05/2026)</a>
 
-    <div class="info-box">
-        <h3>Diretrizes Operacionais de Atendimento</h3>
-        <ul>
-            <li><strong>Atendimento Eletivo:</strong> Permitido apenas quando houver impossibilidade técnica ou limitação de vagas no HMAB ou HFA. Liberação via sistema <strong>SAU</strong>.</li>
-            <li><strong>Urgência e Emergência:</strong> Acesso direto da rede civil autorizada. Casos não urgentes identificados na triagem hospitalar privada serão redirecionados à estrutura militar assistencial.</li>
-        </ul>
+    <div class="controls">
+        <input type="text" id="search" placeholder="Filtrar por nome, especialidade ou região...">
+        <select id="catFilter">
+            <option value="">Todas as Categorias</option>
+            <option value="Hospital Geral">Hospital Geral</option>
+            <option value="Oftalmologia">Oftalmologia</option>
+        </select>
     </div>
 
-    <!-- Módulo de Inteligência Estatística -->
-    <div class="analytics-grid">
-        <div class="chart-card">
-            <h4>Análise Proporcional por Categoria (Dados Filtrados)</h4>
-            <div class="chart-container">
-                <canvas id="categoryChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-card">
-            <h4>Distribuição Volumétrica por Região (Dados Filtrados)</h4>
-            <div class="chart-container">
-                <canvas id="regionChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Painel de Controle de Filtros -->
-    <div class="search-panel">
-        <div class="search-grid">
-            <div class="form-group">
-                <label for="searchUniversal">Termo de Busca Livre</label>
-                <input type="text" id="searchUniversal" placeholder="Nome, especialidade ou logradouro...">
-            </div>
-            <div class="form-group">
-                <label for="filterCategory">Filtrar por Categoria</label>
-                <select id="filterCategory">
-                    <option value="">[Todas as Categorias]</option>
-                    <option value="Hospital / Geral">Hospital Geral</option>
-                    <option value="Oftalmologia">Oftalmologia</option>
-                    <option value="Psiquiatria">Psiquiatria e Saúde Mental</option>
-                    <option value="Laboratório">Laboratórios de Análises Clínicas</option>
-                    <option value="PNE">Atendimento Especial / PNE</option>
-                    <option value="Home Care">Home Care / Domiciliar</option>
-                    <option value="Clínica Specialized">Clínicas Especializadas</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="filterRegion">Filtrar por Localidade</label>
-                <select id="filterRegion">
-                    <option value="">[Todas as Regiões]</option>
-                    <option value="Águas Claras">Águas Claras</option>
-                    <option value="Asa Norte">Asa Norte</option>
-                    <option value="Asa Sul">Asa Sul</option>
-                    <option value="Ceilândia">Ceilândia</option>
-                    <option value="Cruzeiro">Cruzeiro / Cruzeiro Velho</option>
-                    <option value="Gama">Gama</option>
-                    <option value="Guará">Guará</option>
-                    <option value="Lago Sul/Norte">Lago Sul / Norte / Paranoá</option>
-                    <option value="Samambaia">Samambaia</option>
-                    <option value="Santa Maria">Santa Maria</option>
-                    <option value="Sobradinho">Sobradinho</option>
-                    <option value="Sudoeste">Sudoeste</option>
-                    <option value="Taguatinga">Taguatinga</option>
-                    <option value="Planaltina">Planaltina</option>
-                    <option value="Valparaíso">Valparaíso - GO</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="filterFav">Modo de Exibição</label>
-                <select id="filterFav">
-                    <option value="all">Exibir Toda a Rede</option>
-                    <option value="fav">Apenas Favoritos (❤️)</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <div class="results-counter">
-        <div>Mostrando <span id="visibleCount">0</span> de <span id="totalCount">0</span> credenciados</div>
-        <div style="font-size: 11px; color: #666;">* Clique nas colunas para ordenar. Dados persistidos localmente no navegador.</div>
-    </div>
-
-    <!-- Grid de Dados Operacionais -->
-    <div class="table-container">
-        <table id="mainTable">
-            <thead>
-                <tr>
-                    <th style="width: 5%; text-align: center;">Fav</th>
-                    <th onclick="handleSort(1)" style="width: 25%;">Prestador / Instituição</th>
-                    <th onclick="handleSort(2)" style="width: 15%;">Categoria</th>
-                    <th style="width: 25%;">Especialidades Cobertas</th>
-                    <th onclick="handleSort(4)" style="width: 12%;">Região</th>
-                    <th style="width: 18%;">Endereço e Contato</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <tr><td colspan="6" style="text-align:center; padding:30px; font-weight:600;">Carregando base de dados CSV...</td></tr>
-            </tbody>
-        </table>
-    </div>
+    <table id="credTable">
+        <thead>
+            <tr><th>Fav</th><th>Nome</th><th>Categoria</th><th>Especialidades</th><th>Região</th></tr>
+        </thead>
+        <tbody id="body"></tbody>
+    </table>
 </div>
 
 <script>
-    let dataset = [];
-    let favorites = JSON.parse(localStorage.getItem('hmab_favs_2026')) || [];
-    let ratings = JSON.parse(localStorage.getItem('hmab_stars_2026')) || {};
-    
-    let sortCol = -1;
-    let sortAsc = true;
-    let catChart = null;
-    let regChart = null;
+    let data = [];
+    let favs = JSON.parse(localStorage.getItem('favs')) || [];
 
-    // Inicialização - Consumo assíncrono do arquivo CSV externo
-    document.addEventListener("DOMContentLoaded", () => {
-        fetch('rede_credenciada.csv')
-            .then(response => {
-                if (!response.ok) throw new Error("Arquivo CSV não encontrado no diretório.");
-                return response.text();
-            })
-            .then(text => {
-                parseCSV(text);
-                renderDashboard();
-            })
-            .catch(err => {
-                document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:red; padding:30px; font-weight:600;">Erro ao carregar dados: ${err.message}<br><small>Dica: Execute um servidor local (Live Server no VS Code, Python -m http.server ou hospede gratuitamente na nuvem) para evitar bloqueios de segurança de arquivos locais (CORS).</small></td></tr>`;
+    fetch('rede_credenciada.csv')
+        .then(res => res.text())
+        .then(text => {
+            // Lógica simples de conversão CSV
+            const rows = text.split('\n').slice(1);
+            data = rows.map(r => {
+                const [id, nome, categoria, especialidades, regiao, dados] = r.split(',');
+                return { id, nome, categoria, especialidades, regiao, dados };
             });
-    });
-
-    // Parser manual robusto para tratamento de aspas e quebras de linha em CSV
-    function parseCSV(text) {
-        const lines = [];
-        let row = [""];
-        let inQuotes = false;
-
-        for (let i = 0; i < text.length; i++) {
-            let c = text[i];
-            let next = text[i+1];
-            if (c === '"') {
-                if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; }
-                else { inQuotes = !inQuotes; }
-            } else if (c === ',' && !inQuotes) {
-                row.push('');
-            } else if ((c === '\r' || c === '\n') && !inQuotes) {
-                if (c === '\r' && next === '\n') { i++; }
-                if (row.length > 1 || row[0] !== "") lines.push(row);
-                row = [''];
-            } else {
-                row[row.length - 1] += c;
-            }
-        }
-        if (row.length > 1 || row[0] !== "") lines.push(row);
-
-        const headers = lines[0].map(h => h.trim());
-        dataset = lines.slice(1).map(line => {
-            return {
-                id: line[0]?.trim(),
-                nome: line[1]?.trim(),
-                categoria: line[2]?.trim(),
-                especialidades: line[3] ? line[3].split(';').map(s => s.trim()) : [],
-                regiao: line[4]?.trim(),
-                dados: line[5]?.trim()
-            };
-        }).filter(item => item.id && item.nome);
-    }
-
-    function toggleFav(id) {
-        favorites = favorites.includes(id) ? favorites.filter(f => f !== id) : [...favorites, id];
-        localStorage.setItem('hmab_favs_2026', JSON.stringify(favorites));
-        renderDashboard();
-    }
-
-    function setStar(id, rating) {
-        ratings[id] = rating;
-        localStorage.setItem('hmab_stars_2026', JSON.stringify(ratings));
-        renderDashboard();
-    }
-
-    function renderDashboard() {
-        const query = document.getElementById('searchUniversal').value.toLowerCase();
-        const catSelected = document.getElementById('filterCategory').value;
-        const regSelected = document.getElementById('filterRegion').value;
-        const favView = document.getElementById('filterFav').value;
-        const body = document.getElementById('tableBody');
-        
-        body.innerHTML = '';
-
-        let filtered = dataset.filter(item => {
-            const matchText = item.nome.toLowerCase().includes(query) || 
-                              item.especialidades.some(s => s.toLowerCase().includes(query)) ||
-                              item.dados.toLowerCase().includes(query);
-            const matchCat = catSelected === "" || item.categoria === catSelected;
-            const matchReg = regSelected === "" || item.regiao.includes(regSelected) || (regSelected === "Lago Sul/Norte" && (item.regiao.includes("Lago") || item.regiao.includes("Paranoá")));
-            const matchFav = favView === "all" || favorites.includes(item.id);
-
-            return matchText && matchCat && matchReg && matchFav;
+            render();
         });
 
-        if (sortCol !== -1) {
-            filtered.sort((a, b) => {
-                let valA = sortCol === 1 ? a.nome : sortCol === 2 ? a.categoria : a.regiao;
-                let valB = sortCol === 1 ? b.nome : sortCol === 2 ? b.categoria : b.regiao;
-                return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            });
-        }
-
-        filtered.forEach(item => {
+    function render() {
+        const body = document.getElementById('body');
+        body.innerHTML = '';
+        data.forEach(item => {
             const tr = document.createElement('tr');
-            const hasFav = favorites.includes(item.id);
-            const starCount = ratings[item.id] || 0;
-
-            const badges = item.especialidades.map(s => {
-                let c = "spec-badge";
-                if(s.includes("EMERGÊNCIA") || s.includes("24H") || s.includes("PS ")) c += " urg-badge";
-                if(item.categoria === "PNE" || s === "PNE") c += " pne-badge";
-                if(item.categoria === "Home Care") c += " hc-badge";
-                return `<span class='${c}'>${s}</span>`;
-            }).join(' ');
-
-            let stars = `<div class="star-rating">`;
-            for (let i = 1; i <= 5; i++) {
-                stars += `<span class="star ${i <= starCount ? 'filled' : ''}" onclick="setStar('${item.id}', ${i})">&#9733;</span>`;
-            }
-            stars += `</div>`;
-
             tr.innerHTML = `
-                <td class="action-cell">
-                    <button class="btn-fav ${hasFav ? 'active' : ''}" onclick="toggleFav('${item.id}')">${hasFav ? '❤️' : '🖤'}</button>
-                </td>
-                <td style="font-weight: 600; color: var(--primary-color);">${item.nome}${stars}</td>
-                <td><span style="font-size:12px; font-weight:500; color:#444;">${item.categoria}</span></td>
-                <td>${badges}</td>
-                <td><strong>${item.regiao}</strong></td>
-                <td><span style="font-size: 12px; color: #333;">${item.dados}</span></td>
+                <td class="fav" onclick="toggleFav('${item.id}')">${favs.includes(item.id) ? '❤️' : '🤍'}</td>
+                <td>${item.nome}</td>
+                <td>${item.categoria}</td>
+                <td>${item.especialidades}</td>
+                <td>${item.regiao}</td>
             `;
             body.appendChild(tr);
         });
-
-        document.getElementById('visibleCount').innerText = filtered.length;
-        document.getElementById('totalCount').innerText = dataset.length;
-
-        refreshCharts(filtered);
     }
 
-    function handleSort(colIndex) {
-        if (sortCol === colIndex) { sortAsc = !sortAsc; } 
-        else { sortCol = colIndex; sortAsc = true; }
-        
-        const ths = document.querySelectorAll('th');
-        ths.forEach((th, idx) => {
-            th.classList.remove('sort-asc', 'sort-desc');
-            if (idx === colIndex) th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
-        });
-        renderDashboard();
+    function toggleFav(id) {
+        favs.includes(id) ? favs = favs.filter(f => f !== id) : favs.push(id);
+        localStorage.setItem('favs', JSON.stringify(favs));
+        render();
     }
-
-    function refreshCharts(currentData) {
-        const catMetrics = {};
-        const regMetrics = {};
-
-        currentData.forEach(item => {
-            catMetrics[item.categoria] = (catMetrics[item.categoria] || 0) + 1;
-            regMetrics[item.regiao] = (regMetrics[item.regiao] || 0) + 1;
-        });
-
-        if (catChart) catChart.destroy();
-        catChart = new Chart(document.getElementById('categoryChart').getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(catMetrics),
-                datasets: [{
-                    data: Object.values(catMetrics),
-                    backgroundColor: ['#1b4332', '#2d6a4f', '#40916c', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7']
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
-        });
-
-        if (regChart) regChart.destroy();
-        regChart = new Chart(document.getElementById('regionChart').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: Object.keys(regMetrics),
-                datasets: [{ data: Object.values(regMetrics), backgroundColor: '#d4af37', borderRadius: 4 }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 9 } } }, y: { ticks: { font: { size: 9 } } } }
-            }
-        });
-    }
-
-    // Ouvintes Operacionais
-    document.getElementById('searchUniversal').addEventListener('input', renderDashboard);
-    document.getElementById('filterCategory').addEventListener('change', renderDashboard);
-    document.getElementById('filterRegion').addEventListener('change', renderDashboard);
-    document.getElementById('filterFav').addEventListener('change', renderDashboard);
 </script>
-
 </body>
 </html>
