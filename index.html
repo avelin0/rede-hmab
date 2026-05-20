@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Rede Credenciada - HMAB 2026</title>
+    <!-- Carregamento do Chart.js para os Gráficos Estatísticos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1b4332; /* Verde Exército */
+            --secondary-color: #2d6a4f;
+            --accent-color: #d4af37; /* Dourado */
+            --bg-light: #f4f6f4;
+            --text-dark: #2d312e;
+            --white: #ffffff;
+            --border-color: #dae2dc;
+            --alert-bg: #fff3cd;
+            --alert-text: #856404;
+            --fav-color: #e63946;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-light); color: var(--text-dark); padding: 20px; line-height: 1.6; }
+        .container { max-width: 1350px; margin: 0 auto; background: var(--white); padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        header { border-bottom: 3px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+        .header-title h1 { color: var(--primary-color); font-size: 22px; font-weight: 700; text-transform: uppercase; }
+        .header-title p { color: #555; font-size: 13px; margin-top: 3px; }
+        .badge-eb { background-color: var(--primary-color); color: var(--white); padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+
+        /* Seção de Gráficos */
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .chart-card { background: #fafafa; border: 1px solid var(--border-color); padding: 15px; border-radius: 6px; min-height: 320px; display: flex; flex-direction: column; align-items: center; }
+        .chart-card h4 { margin-bottom: 10px; color: var(--primary-color); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .chart-container { width: 100%; height: 260px; position: relative; }
+
+        /* Regras e Avisos */
+        .info-box { background-color: #e2e3e5; border-left: 5px solid #6c757d; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-size: 13px; }
+        .info-box h3 { margin-bottom: 5px; color: var(--primary-color); font-size: 14px; }
+        .info-box ul { margin-left: 20px; }
+        .alert-box { background-color: var(--alert-bg); color: var(--alert-text); border: 1px solid #ffeeba; padding: 12px; border-radius: 4px; font-size: 13px; margin-bottom: 25px; }
+
+        /* Painel de Busca e Filtros */
+        .search-panel { background: #f9fbf9; border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; margin-bottom: 20px; }
+        .search-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--primary-color); }
+        .form-group input, .form-group select { padding: 8px 12px; border: 1px solid #ccd5ae; border-radius: 4px; font-size: 13px; outline: none; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--secondary-color); box-shadow: 0 0 4px rgba(45, 106, 79, 0.2); }
+
+        /* Tabela Contêiner */
+        .results-counter { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .table-container { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 6px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        th { background-color: var(--primary-color); color: var(--white); padding: 12px; font-weight: 600; text-transform: uppercase; font-size: 11px; cursor: pointer; user-select: none; position: relative; }
+        th:hover { background-color: var(--secondary-color); }
+        th.sort-asc::after { content: " ▲"; font-size: 9px; position: absolute; right: 5px; }
+        th.sort-desc::after { content: " ▼"; font-size: 9px; position: absolute; right: 5px; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+        tr:nth-child(even) td { background-color: #fcfdfe; }
+        tr:hover td { background-color: #f1f5f2; }
+
+        /* Interatividades: Favoritos e Estrelas */
+        .action-cell { text-align: center; white-space: nowrap; }
+        .btn-fav { background: none; border: none; font-size: 18px; cursor: pointer; color: #ccc; transition: color 0.2s; outline: none; }
+        .btn-fav.active { color: var(--fav-color); }
+        .star-rating { display: inline-flex; gap: 2px; }
+        .star { font-size: 16px; color: #ccc; cursor: pointer; transition: color 0.1s; }
+        .star.filled { color: var(--accent-color); }
+
+        /* Badges de Especialidades e Áreas */
+        .spec-badge { display: inline-block; background: #e8f0ec; color: var(--secondary-color); padding: 1px 5px; border-radius: 4px; font-size: 11px; font-weight: 600; margin: 2px; border: 1px solid #d8e5df; }
+        .pne-badge { background: #e7f5ff; color: #004085; border: 1px solid #b8daff; }
+        .hc-badge { background: #f3e5f5; color: #4a148c; border: 1px solid #e1bee7; }
+        .urg-badge { background: #fff5f5; color: #e60000; border: 1px solid #ffe3e3; font-weight: bold; }
+        .fone-link { color: var(--secondary-color); text-decoration: none; font-weight: 600; }
+        .fone-link:hover { text-decoration: underline; }
+
+        @media (max-width: 768px) {
+            header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .analytics-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="header-title">
+            <h1>OCS e PSA Credenciados ao H Mil A Brasília</h1>
+            <p>Guia de Organizações Civis de Saúde (OCS) e Profissionais Autônomos (PSA) do SSEx • Atualizado em 10/05/2026</p>
+        </div>
+        <span class="badge-eb">SSEx / FuSEx</span>
+    </header>
+
+    <!-- Resumo de Diretrizes Importantes -->
+    <div class="info-box">
+        <h3>Diretrizes Gerais de Atendimento</h3>
+        <ul>
+            <li><strong>Atendimento Eletivo:</strong> Direcionado a credenciados apenas em caso de impossibilidade/limitação do HMAB ou HFA. Emissão de guias via sistema <strong>SAU</strong> (<a href="https://sauhmab.eb.mil.br/pac/" target="_blank">sauhmab.eb.mil.br/pac/</a>).</li>
+            <li><strong>Urgência e Emergência:</strong> O beneficiário pode procurar diretamente qualquer OCS credenciada. Se for fora da rede credenciada, comunique ao HMAB em até <strong>2 dias úteis</strong>.</li>
+        </ul>
+    </div>
+
+    <!-- Seção de Gráficos Estatísticos Dinâmicos -->
+    <div class="analytics-grid">
+        <div class="chart-card">
+            <h4>Distribuição por Tipo / Categoria de Serviço (Filtrado)</h4>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h4>Top Regiões por Volume de Credenciados (Filtrado)</h4>
+            <div class="chart-container">
+                <canvas id="regionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Painel de Filtros Avançado -->
+    <div class="search-panel">
+        <div class="search-grid">
+            <div class="form-group">
+                <label for="searchUniversal">Buscar por Nome, Especialidade ou Endereço</label>
+                <input type="text" id="searchUniversal" placeholder="Digite termos como 'Anchieta', 'Fisioterapia'...">
+            </div>
+            <div class="form-group">
+                <label for="filterCategory">Tipo / Categoria de Serviço</label>
+                <select id="filterCategory">
+                    <option value="">Todos os tipos</option>
+                    <option value="Hospital / Geral">Hospital Geral (Pronto-Socorro / Internação)</option>
+                    <option value="Oftalmologia">Oftalmologia (Urgência / Clínicas)</option>
+                    <option value="Psiquiatria">Psiquiatria e Saúde Mental</option>
+                    <option value="Laboratório">Laboratórios de Análises Clínicas</option>
+                    <option value="PNE">Atendimento Especial / PNE (Autismo, ABA, etc)</option>
+                    <option value="Home Care">Home Care / Assistência Domiciliar</option>
+                    <option value="Clínica Specialized">Clínicas Médicas / Terapias</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="filterRegion">Região Administrativa (Localidade)</label>
+                <select id="filterRegion">
+                    <option value="">Todas as Regiões</option>
+                    <option value="Águas Claras">Águas Claras</option>
+                    <option value="Asa Norte">Asa Norte</option>
+                    <option value="Asa Sul">Asa Sul</option>
+                    <option value="Ceilândia">Ceilândia</option>
+                    <option value="Cruzeiro">Cruzeiro / Cruzeiro Velho</option>
+                    <option value="Gama">Gama</option>
+                    <option value="Guará">Guará (I e II / Cidade do Automóvel)</option>
+                    <option value="Lago Sul/Norte">Lago Sul / Lago Norte</option>
+                    <option value="Samambaia">Samambaia</option>
+                    <option value="Santa Maria">Santa Maria</option>
+                    <option value="Sobradinho">Sobradinho</option>
+                    <option value="Sudoeste">Sudoeste</option>
+                    <option value="Taguatinga">Taguatinga</option>
+                    <option value="Planaltina">Planaltina</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="filterFav">Visualização</label>
+                <select id="filterFav">
+                    <option value="all">Exibir Todos os Registros</option>
+                    <option value="fav">Apenas Meus Favoritos (❤️)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-counter">
+        <div>Mostrando <span id="visibleCount">0</span> de <span id="totalCount">0</span> prestadores ativos</div>
+        <div style="font-size: 11px; color: #666;">* Suas classificações por estrelas e favoritos são salvos localmente.</div>
+    </div>
+
+    <!-- Tabela Principal -->
+    <div class="table-container">
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th style="width: 5%; text-align: center;">Fav</th>
+                    <th onclick="sortTable(1)" style="width: 23%;">Prestador / Instituição</th>
+                    <th onclick="sortTable(2)" style="width: 15%;">Categoria</th>
+                    <th style="width: 25%;">Especialidades Cobertas</th>
+                    <th onclick="sortTable(4)" style="width: 12%;">Região</th>
+                    <th style="width: 20%;">Endereço e Contato</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Injeção dinâmica via Javascript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Mapeamento unificado do banco de dados (Base consolidada)
+    const dataset = [
+        { id: "h1", nome: "HOSPITAL ANCHIETA - Taguatinga", categoria: "Hospital / Geral", especialidades: ["EMERGÊNCIA 24H", "Clínica Médica", "Obstétrica (Parto)", "Pediátrica"], regiao: "Taguatinga", dados: "St. C Norte QNC AE Área Especial 8, 9, 10 - Taguatinga.<br>Tel: (61) 3049-9001 <span class='urg-badge'>PS 24h</span>" },
+        { id: "h2", nome: "HOSPITAL MANTEVIDA - Taguatinga", categoria: "Hospital / Geral", especialidades: ["EMERGÊNCIA 24H", "Clínica Médica", "Ortopédica", "Ginecológica", "Obstetrícia (Parto)"], regiao: "Taguatinga", dados: "QS 5 a 13 - Taguatinga, DF.<br>Tel: (61) 3574-9700 <span class='urg-badge'>PS 24h</span>" },
+        { id: "h3", nome: "HOSPITAL ANCHIETA - Ceilândia", categoria: "Hospital / Geral", especialidades: ["EMERGÊNCIA 24H", "Clínica Médica", "Ortopédica"], regiao: "Ceilândia", dados: "Setor N QNN 28 Módulo C, Ceilândia Sul.<br>Tel: (61) 3378-9000 <span class='urg-badge'>PS 24h</span>" },
+        { id: "h4", nome: "HOSPITAL DAHER - Lago Sul", categoria: "Hospital / Geral", especialidades: ["EMERGÊNCIA 24H", "Clínica Médica", "Ortopedia", "Obstetrícia", "Pediátrica"], regiao: "Lago Sul/Norte", dados: "SHIS QI 7, Conj. F - Lago Sul.<br>Tel: (61) 3213-4848 <span class='urg-badge'>PS 24h</span>" },
+        { id: "h5", nome: "HOSPITAL SÃO MATHEUS - Cruzeiro", categoria: "Hospital / Geral", especialidades: ["EMERGÊNCIA 24H", "Clínica Médica", "Ortopédica", "Pediátrica"], regiao: "Cruzeiro", dados: "SRES Quadra 02 Área Especial - Cruzeiro Velho.<br>Tel: (61) 3362-0045 <span class='urg-badge'>PS 24h</span>" },
+        { id: "h6", nome: "HOSPITAL MANTEVIDA - Unidade Asa Norte", categoria: "Hospital / Geral", especialidades: ["EMERGÊNCIA 24H", "Clínica Médica", "Ortopedia"], regiao: "Asa Norte", dados: "SGAN 608 Módulo F - Asa Norte, DF.<br>Tel: (61) 3574-9700 <span class='urg-badge'>PS 24h</span>" },
+        { id: "h7", nome: "HOSPITAL HOME - Asa Sul", categoria: "Hospital / Geral", especialidades: ["EMERGÊNCIA 24H", "Clínica Médica", "Ortopédica"], regiao: "Asa Sul", dados: "SGAS Quadra 613, Conjunto C - Asa Sul.<br>Tel: (61) 3878-2878 <span class='urg-badge'>PS 24h</span>" },
+        { id: "o1", nome: "VISÃO HOSPITAL DE OLHOS – ISOB (Taguatinga)", categoria: "Oftalmologia", especialidades: ["EMERGÊNCIA OFTALMOLÓGICA 24H"], regiao: "Taguatinga", dados: "St. C Norte CNC 03 Lote 12 - Taguatinga.<br>Tel: (61) 3686-7902" },
+        { id: "o2", nome: "HOSPITAL OFTALMOLÓGICO DE BRASÍLIA – HOB", categoria: "Oftalmologia", especialidades: ["EMERGÊNCIA OFTALMOLÓGICA 24H"], regiao: "Asa Sul", dados: "SGAS II 607 - Asa Sul, DF.<br>Tel: (61) 3686-4586" },
+        { id: "o3", nome: "HOSPITAL PACINI - Asa Sul", categoria: "Oftalmologia", especialidades: ["EMERGÊNCIA OFTALMOLÓGICA (Seg a Sáb)"], regiao: "Asa Sul", dados: "SEP Sul 715/915 - Asa Sul.<br>Tel: (61) 3214-4777" },
+        { id: "o4", nome: "CENTRO BRASILEIRO DA VISÃO - CBV", categoria: "Oftalmologia", especialidades: ["EMERGÊNCIA OFTALMOLÓGICA 24H"], regiao: "Asa Sul", dados: "Quadra 613 Lote 91, Via L2 Sul.<br>Tel: (61) 3214-5000" },
+        { id: "m1", nome: "MATERNIDADE BRASÍLIA - Sudoeste", categoria: "Hospital / Geral", especialidades: ["EMERGÊNCIA GINECOLOGIA E OBSTETRÍCIA", "Parto"], regiao: "Sudoeste", dados: "SQMSW 04 Lote 01 S/N – Sudoeste.<br>Tel: (61) 4020-0057" },
+        { id: "p1", nome: "CLÍNICA AME ASSISTÊNCIA MENTAL", categoria: "Psiquiatria", especialidades: ["Emergência Psiquiátrica 'Hospital Dia'"], regiao: "Asa Sul", dados: "SEPS Q 709/909 Centro Médico Julio Adnet.<br>Tel: (61) 4042-8445" },
+        { id: "p2", nome: "VERSE INTERNAÇÃO E EMERGÊNCIA", categoria: "Psiquiatria", especialidades: ["Internação Psiquiátrica", "Emergência 24h"], regiao: "Sobradinho", dados: "Núcleo Rural Lago Oeste, Sobradinho-DF.<br>Tel: (61) 3553-7002" },
+        { id: "p3", nome: "CLÍNICA CRESCER HUMANIZADA", categoria: "Psiquiatria", especialidades: ["Internação e Emergência Psiquiátrica"], regiao: "Samambaia", dados: "Colônia Agrícola Sucupira, Chácara 35.<br>Horário 24h." },
+        { id: "l1", nome: "LABORATÓRIO SABIN DE ANÁLISES CLÍNICAS", categoria: "Laboratório", especialidades: ["Análises Clínicas", "Diagnósticos Laboratoriais"], regiao: "Asa Norte", dados: "SAAN Quadra 03 Lotes 165 a 245.<br>Atendimento ampliado." },
+        { id: "l2", nome: "EXAME IMAGEM E LABORATÓRIO", categoria: "Laboratório", especialidades: ["Análises Clínicas", "Medicina Diagnóstica por Imagem"], regiao: "Asa Sul", dados: "SHLS Quadra 716, Conjunto B, Bloco 02.<br>Tel: (61) 4004-3881" },
+        { id: "n1", nome: "VIVER CENTRO DE DESENVOLVIMENTO", categoria: "PNE", especialidades: ["PNE", "ABA", "Psicologia", "Fonoaudiologia", "Psicopedagogia"], regiao: "Asa Norte", dados: "SHCGN CLR 703, Bloco H - Asa Norte.<br>Tel: (61) 3702-6699" },
+        { id: "n2", nome: "INTEGRAR INSTITUTO DE REABILITAÇÃO COGNITIVA", categoria: "PNE", especialidades: ["PNE", "Método ABA", "Integração Sensorial"], regiao: "Asa Sul", dados: "SEPS EQ 714/914 Bloco A Ed. Porto Alegre.<br>Tel: (61) 3245-1160" },
+        { id: "c1", nome: "CAPTAMED CUIDADOS CONTINUADOS", categoria: "Home Care", especialidades: ["HOME CARE / ASSISTÊNCIA DOMICILIAR"], regiao: "Asa Norte", dados: "SMHN Quadra 02 Bloco C Nº 44, Ed. Dr. Crispim.<br>Tel: (61) 3878-2737" },
+        { id: "ac1", nome: "ÁTRIOS CARDIOLOGIA E ESPECIALIDADES", categoria: "Clínica Specialized", especialidades: ["Cardiologia", "Endocrinologia", "Nutrologia"], regiao: "Águas Claras", dados: "QS 3 Lotes 3, 5 e 7, Ed. Pátio Capital.<br>Tel: (61) 3326-5409" },
+        { id: "ac2", nome: "AMPIEZZA CLÍNICA INTEGRADA LTDA", categoria: "Clínica Specialized", especialidades: ["Fisioterapia", "Psicologia", "Nutrição", "Fonoaudiologia"], regiao: "Águas Claras", dados: "Rua das Figueiras, Lote 07, Salas 402/409.<br>Tel: (61) 3142-0244" },
+        { id: "an1", nome: "FOCUS DIAGNÓSTICO POR IMAGEM", categoria: "Clínica Specialized", especialidades: ["Radiologia", "Densitometria Óssea", "Mamografia", "Ultrassonografia"], regiao: "Asa Norte", dados: "STN Conj. M, Ed. Vital Brazil.<br>Tel: (61) 3551-5130" },
+        { id: "as1", nome: "ANGIOCENTRO - CENTRO DE ANGIOLOGIA", categoria: "Clínica Specialized", especialidades: ["Angiologia", "Cirurgia Vascular", "Cardiologia"], regiao: "Asa Sul", dados: "SGAS 915, Conjunto N, Edifício Advance I.<br>Tel: (61) 3345-1326" },
+        { id: "g1", nome: "ILA – INSTITUTO LUCIANO ARAÚJO LTDA", categoria: "Clínica Specialized", especialidades: ["Psiquiatria", "Urologia", "Ortopedia", "Cardiologia", "Ginecologia"], regiao: "Gama", dados: "QD 01 Conjunto A Lote 10 – Setor Sul.<br>Tel: (61) 3081-3956" },
+        { id: "gu1", nome: "CLÍNICA DE FISIOTERAPIA SANTA ISABEL", categoria: "Clínica Specialized", especialidades: ["Hidroterapia", "Fisioterapia Ortopédica", "RPG", "Acupuntura"], regiao: "Guará", dados: "Rua 15 lote 26 – Polo de Modas – Guará II.<br>Tel: (61) 3301-7187" },
+        { id: "su1", nome: "ANGIOVITTA - CLÍNICA MÉDICA LTDA", categoria: "Clínica Specialized", especialidades: ["Angiologia", "Dermatologia", "Endocrinologia", "Reumatologia"], regiao: "Sudoeste", dados: "SHCS/SW, Bloco 3, Sala 211, Centro Clínico Sudoeste.<br>Tel: (61) 3233-4047" },
+        { id: "pl1", nome: "CENTRO CLÍNICO FEMMINA - Planaltina", categoria: "Clínica Specialized", especialidades: ["Cardiologia", "Dermatologia", "Imagem", "Laboratório"], regiao: "Planaltina", dados: "Av. Contorno Quadra 18 Lote 240/245.<br>Tel: (61) 3388-3733" }
+    ];
+
+    // Gerenciamento de estado local (LocalStorage) para Favoritos e Estrelas
+    let favorites = JSON.parse(localStorage.getItem('hmab_favorites')) || [];
+    let ratings = JSON.parse(localStorage.getItem('hmab_ratings')) || {};
+
+    let sortCol = -1;
+    let sortAsc = true;
+    let catChart = null;
+    let regChart = null;
+
+    function toggleFavorite(id) {
+        if (favorites.includes(id)) {
+            favorites = favorites.filter(favId => favId !== id);
+        } else {
+            favorites.push(id);
+        }
+        localStorage.setItem('hmab_favorites', JSON.stringify(favorites));
+        renderTable();
+    }
+
+    function setRating(id, rating) {
+        ratings[id] = rating;
+        localStorage.setItem('hmab_ratings', JSON.stringify(ratings));
+        renderTable();
+    }
+
+    function renderTable() {
+        const textFilter = document.getElementById('searchUniversal').value.toLowerCase();
+        const catFilter = document.getElementById('filterCategory').value;
+        const regFilter = document.getElementById('filterRegion').value;
+        const favView = document.getElementById('filterFav').value;
+        const body = document.getElementById('tableBody');
+        
+        body.innerHTML = '';
+
+        let filtered = dataset.filter(item => {
+            const matchesText = item.nome.toLowerCase().includes(textFilter) || 
+                                item.especialidades.some(s => s.toLowerCase().includes(textFilter)) ||
+                                item.dados.toLowerCase().includes(textFilter);
+            const matchesCat = catFilter === "" || item.categoria === catFilter;
+            const matchesReg = regFilter === "" || item.regiao.includes(regFilter);
+            const matchesFav = favView === "all" || favorites.includes(item.id);
+
+            return matchesText && matchesCat && matchesReg && matchesFav;
+        });
+
+        if (sortCol !== -1) {
+            filtered.sort((a, b) => {
+                let valA = sortCol === 1 ? a.nome : sortCol === 2 ? a.categoria : a.regiao;
+                let valB = sortCol === 1 ? b.nome : sortCol === 2 ? b.categoria : b.regiao;
+                return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            });
+        }
+
+        // Listagem dos itens filtrados na tabela
+        filtered.forEach(item => {
+            const tr = document.createElement('tr');
+            const isFav = favorites.includes(item.id);
+            const currentRating = ratings[item.id] || 0;
+
+            const badges = item.especialidades.map(s => {
+                let c = "spec-badge";
+                if(s.includes("EMERGÊNCIA") || s.includes("24H") || s.includes("PS ")) c += " urg-badge";
+                if(item.categoria === "PNE") c += " pne-badge";
+                if(item.categoria === "Home Care") c += " hc-badge";
+                return `<span class='${c}'>${s}</span>`;
+            }).join(' ');
+
+            // Bloco de Estrelas Interativo
+            let starsHtml = `<div class="star-rating">`;
+            for (let i = 1; i <= 5; i++) {
+                starsHtml += `<span class="star ${i <= currentRating ? 'filled' : ''}" onclick="setRating('${item.id}', ${i})">&#9733;</span>`;
+            }
+            starsHtml += `</div>`;
+
+            tr.innerHTML = `
+                <td class="action-cell">
+                    <button class="btn-fav ${isFav ? 'active' : ''}" onclick="toggleFavorite('${item.id}')">
+                        ${isFav ? '❤️' : '🖤'}
+                    </button>
+                </td>
+                <td style="font-weight: 600; color: var(--primary-color);">
+                    ${item.nome}
+                    ${starsHtml}
+                </td>
+                <td><span style="font-size:12px; font-weight:500; color:#444;">${item.categoria}</span></td>
+                <td>${badges}</td>
+                <td><strong>${item.regiao}</strong></td>
+                <td><span style="font-size: 12px; color: #333;">${item.dados}</span></td>
+            `;
+            body.appendChild(tr);
+        });
+
+        document.getElementById('visibleCount').innerText = filtered.length;
+        document.getElementById('totalCount').innerText = dataset.length;
+
+        // Atualiza métricas estatísticas dos gráficos com base nos filtros ativos
+        updateCharts(filtered);
+    }
+
+    function sortTable(colIndex) {
+        if (sortCol === colIndex) {
+            sortAsc = !sortAsc;
+        } else {
+            sortCol = colIndex;
+            sortAsc = true;
+        }
+        const ths = document.querySelectorAll('th');
+        ths.forEach((th, idx) => {
+            th.classList.remove('sort-asc', 'sort-desc');
+            if (idx === colIndex) th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+        });
+        renderTable();
+    }
+
+    // Geração/Atualização de Gráficos estatísticos com Chart.js
+    function updateCharts(dataList) {
+        const categories = {};
+        const regions = {};
+
+        dataList.forEach(item => {
+            categories[item.categoria] = (categories[item.categoria] || 0) + 1;
+            regions[item.regiao] = (regions[item.regiao] || 0) + 1;
+        });
+
+        // Configuração do Gráfico de Categorias (Rosca)
+        if (catChart) catChart.destroy();
+        const ctxCat = document.getElementById('categoryChart').getContext('2d');
+        catChart = new Chart(ctxCat, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(categories),
+                datasets: [{
+                    data: Object.values(categories),
+                    backgroundColor: ['#1b4332', '#2d6a4f', '#40916c', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } } }
+        });
+
+        // Configuração do Gráfico de Localidades (Barras Horizontais)
+        if (regChart) regChart.destroy();
+        const ctxReg = document.getElementById('regionChart').getContext('2d');
+        regChart = new Chart(ctxReg, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(regions),
+                datasets: [{
+                    label: 'Prestadores',
+                    data: Object.values(regions),
+                    backgroundColor: '#d4af37',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } }
+            }
+        });
+    }
+
+    // Ouvintes dos filtros de dados
+    document.getElementById('searchUniversal').addEventListener('input', renderTable);
+    document.getElementById('filterCategory').addEventListener('change', renderTable);
+    document.getElementById('filterRegion').addEventListener('change', renderTable);
+    document.getElementById('filterFav').addEventListener('change', renderTable);
+
+    // Renderização inicial
+    renderTable();
+</script>
+
+</body>
+</html>
